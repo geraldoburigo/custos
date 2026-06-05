@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Score da Taxa — Geraldo Búrigo</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0c10;
+  --s1:#0f1219;
+  --s2:#151a24;
+  --s3:#1d2433;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --text:#e6eaf4;
+  --muted:#6b7694;
+  --dim:#303856;
+  --accent:#c8f135;
+  --accent-dim:rgba(200,241,53,0.08);
+  --red:#ff5c7a;
+  --red-dim:rgba(255,92,122,0.08);
+  --yellow:#ffc94d;
+  --yellow-dim:rgba(255,201,77,0.08);
+  --blue:#5b9cf6;
+  --blue-dim:rgba(91,156,246,0.08);
+  --font:'IBM Plex Sans',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;font-size:14px}
+
+.page{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 5rem}
+
+/* HEADER */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem}
+h1{font-size:clamp(1.6rem,4vw,2.6rem);font-weight:600;letter-spacing:-.03em;line-height:1.1;margin-bottom:.4rem}
+.byline{font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:.4rem}
+.tagline{font-size:13px;color:var(--muted);margin-bottom:2rem;line-height:1.6;max-width:520px}
+.divider{border:none;border-top:1px solid var(--border);margin:1.75rem 0}
+
+/* SLIDERS */
+.inputs-section{margin-bottom:2rem}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:1rem}
+.inputs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+@media(max-width:560px){.inputs-grid{grid-template-columns:1fr}}
+
+.field{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;transition:border-color .2s}
+.field:focus-within{border-color:var(--border2)}
+.field-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem}
+.field-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.field-value{font-family:var(--mono);font-size:1.3rem;font-weight:600;color:var(--accent);letter-spacing:-.02em}
+
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:2px;
+  border-radius:1px;outline:none;cursor:pointer;display:block;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--accent);box-shadow:0 0 0 3px rgba(200,241,53,0.12);
+  cursor:pointer;transition:box-shadow .15s,transform .15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{
+  box-shadow:0 0 0 7px rgba(200,241,53,0.12);transform:scale(1.1);
+}
+.range-ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:3px}
+
+/* DUAL SCORE */
+.scores-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:2rem}
+@media(max-width:480px){.scores-row{grid-template-columns:1fr}}
+
+.score-card{border-radius:12px;padding:1.5rem;border:1px solid var(--border);position:relative;overflow:hidden}
+.score-card.keep{background:linear-gradient(135deg,var(--s1),rgba(200,241,53,.04));border-color:rgba(200,241,53,.15)}
+.score-card.lose{background:linear-gradient(135deg,var(--s1),rgba(255,92,122,.04));border-color:rgba(255,92,122,.15)}
+.score-card-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem}
+.score-card.keep .score-card-label{color:rgba(200,241,53,.6)}
+.score-card.lose .score-card-label{color:rgba(255,92,122,.6)}
+.score-big{display:flex;align-items:flex-end;gap:6px;margin-bottom:.3rem}
+.score-pct{font-family:var(--mono);font-size:3rem;font-weight:700;line-height:1;letter-spacing:-.04em}
+.score-card.keep .score-pct{color:var(--accent)}
+.score-card.lose .score-pct{color:var(--red)}
+.score-sym{font-family:var(--mono);font-size:1.1rem;color:var(--muted);margin-bottom:.35rem}
+.score-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.score-bar{height:3px;border-radius:2px;background:var(--s3);margin-top:.75rem;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.score-card.keep .score-bar-fill{background:var(--accent)}
+.score-card.lose .score-bar-fill{background:var(--red)}
+
+/* RESULT CARDS */
+.results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:2rem}
+@media(max-width:640px){.results-grid{grid-template-columns:repeat(2,1fr)}}
+.rc{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:.9rem;transition:border-color .2s}
+.rc-label{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem}
+.rc-val{font-family:var(--mono);font-size:1rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.rc-val.blue{color:var(--blue)}
+.rc-val.red{color:var(--red)}
+.rc-val.yellow{color:var(--yellow)}
+.rc-val.green{color:var(--accent)}
+.rc-sub{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:2px}
+
+/* BREAKDOWN */
+.breakdown{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:2rem}
+.breakdown-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:1rem}
+.breakdown-bar-wrap{margin-bottom:1rem}
+.bbar-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:.4rem}
+.bbar{height:8px;border-radius:4px;background:var(--s3);overflow:hidden;display:flex;gap:0}
+.bbar-seg{height:100%;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.bbar-seg.keep{background:var(--accent)}
+.bbar-seg.taxa{background:var(--yellow)}
+.bbar-seg.drag{background:var(--red)}
+.breakdown-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.6rem}
+.bleg{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.bleg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* CHART */
+.chart-box{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:2rem}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.chart-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.legend{display:flex;gap:12px}
+.leg{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.leg-line{width:14px;height:2px;border-radius:1px}
+.chart-wrap{position:relative;width:100%;height:280px}
+
+/* FOOTER */
+.footer{font-family:var(--mono);font-size:10px;color:var(--dim);text-align:center;margin-top:3rem;line-height:2}
+.footer a{color:var(--muted);text-decoration:none}
+.footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="eyebrow">// score · taxa de administração</div>
+  <h1>Quanto da sua rentabilidade<br>você realmente fica?</h1>
+  <div class="byline">by Geraldo Búrigo, CNPI</div>
+  <p class="tagline">Taxas pequenas, ao longo do tempo, consomem uma fatia surpreendente do seu retorno. Veja o impacto real — separando o que foi pago em taxa do que você deixou de ganhar.</p>
+
+  <hr class="divider">
+
+  <!-- INPUTS -->
+  <div class="inputs-section">
+    <div class="sec-label">parâmetros</div>
+    <div class="inputs-grid">
+      <div class="field">
+        <div class="field-top">
+          <span class="field-label">Valor investido</span>
+          <span class="field-value" id="v-invest">R$ 100.000</span>
+        </div>
+        <input type="range" id="s-invest" min="1000" max="1000000" step="1000" value="100000">
+        <div class="range-ticks"><span>R$ 1k</span><span>R$ 500k</span><span>R$ 1M</span></div>
+      </div>
+      <div class="field">
+        <div class="field-top">
+          <span class="field-label">Retorno anual bruto</span>
+          <span class="field-value" id="v-retorno">10,0%</span>
+        </div>
+        <input type="range" id="s-retorno" min="1" max="25" step="0.5" value="10">
+        <div class="range-ticks"><span>1%</span><span>12%</span><span>25%</span></div>
+      </div>
+      <div class="field">
+        <div class="field-top">
+          <span class="field-label">Taxa de administração</span>
+          <span class="field-value" id="v-taxa">1,0%</span>
+        </div>
+        <input type="range" id="s-taxa" min="0" max="5" step="0.05" value="1">
+        <div class="range-ticks"><span>0%</span><span>2,5%</span><span>5%</span></div>
+      </div>
+      <div class="field">
+        <div class="field-top">
+          <span class="field-label">Prazo</span>
+          <span class="field-value" id="v-tempo">25 anos</span>
+        </div>
+        <input type="range" id="s-tempo" min="1" max="50" step="1" value="25">
+        <div class="range-ticks"><span>1a</span><span>25a</span><span>50a</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DUAL SCORE -->
+  <div class="scores-row">
+    <div class="score-card keep">
+      <div class="score-card-label">// você fica com</div>
+      <div class="score-big">
+        <div class="score-pct" id="score-keep">—</div>
+        <div class="score-sym">%</div>
+      </div>
+      <div class="score-desc" id="score-keep-desc">do ganho bruto gerado pelos seus investimentos entra no seu bolso.</div>
+      <div class="score-bar"><div class="score-bar-fill" id="bar-keep" style="width:0%"></div></div>
+    </div>
+    <div class="score-card lose">
+      <div class="score-card-label">// você deixa na mesa</div>
+      <div class="score-big">
+        <div class="score-pct" id="score-lose">—</div>
+        <div class="score-sym">%</div>
+      </div>
+      <div class="score-desc" id="score-lose-desc">do ganho bruto é consumido pelas taxas e pelo custo de oportunidade perdido.</div>
+      <div class="score-bar"><div class="score-bar-fill" id="bar-lose" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- RESULT CARDS -->
+  <div class="results-grid">
+    <div class="rc">
+      <div class="rc-label">Ganho bruto</div>
+      <div class="rc-val blue" id="r-bruto">—</div>
+      <div class="rc-sub">sem nenhuma taxa</div>
+    </div>
+    <div class="rc">
+      <div class="rc-label">Taxa paga</div>
+      <div class="rc-val yellow" id="r-taxa">—</div>
+      <div class="rc-sub">custo direto cobrado</div>
+    </div>
+    <div class="rc">
+      <div class="rc-label">Drag (oportunidade)</div>
+      <div class="rc-val red" id="r-drag">—</div>
+      <div class="rc-sub">retorno perdido pela taxa</div>
+    </div>
+    <div class="rc">
+      <div class="rc-label">Ganho líquido</div>
+      <div class="rc-val green" id="r-liquido">—</div>
+      <div class="rc-sub">o que fica no seu bolso</div>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN BAR -->
+  <div class="breakdown">
+    <div class="breakdown-title">// decomposição do ganho bruto</div>
+    <div class="breakdown-bar-wrap">
+      <div class="bbar-labels">
+        <span id="bl-keep">ganho líquido</span>
+        <span id="bl-total" style="color:var(--dim)">100% do ganho bruto</span>
+      </div>
+      <div class="bbar">
+        <div class="bbar-seg keep" id="seg-keep" style="width:0%"></div>
+        <div class="bbar-seg taxa" id="seg-taxa" style="width:0%"></div>
+        <div class="bbar-seg drag" id="seg-drag" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="breakdown-legend">
+      <div class="bleg"><div class="bleg-dot" style="background:var(--accent)"></div>Ganho líquido (fica com você)</div>
+      <div class="bleg"><div class="bleg-dot" style="background:var(--yellow)"></div>Taxa paga (custo direto)</div>
+      <div class="bleg"><div class="bleg-dot" style="background:var(--red)"></div>Drag (retorno que deixou de acontecer)</div>
+    </div>
+  </div>
+
+  <!-- CHART -->
+  <div class="chart-box">
+    <div class="chart-header">
+      <span class="chart-title">// evolução do patrimônio</span>
+      <div class="legend">
+        <div class="leg"><div class="leg-line" style="background:var(--blue)"></div>sem taxa</div>
+        <div class="leg"><div class="leg-line" style="background:var(--accent)"></div>com taxa</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart" role="img" aria-label="Evolução do patrimônio com e sem taxa"></canvas>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <div class="footer">
+    ferramentas educacionais · não constituem recomendação de investimento<br>
+    <a href="https://painel-nine-kappa.vercel.app/">← voltar ao painel</a>
+  </div>
+
+</div>
+
+<script>
+const R = id => document.getElementById(id);
+
+const fmt = v => {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '− ' : '';
+  if (abs >= 1e6) return sign + 'R$ ' + (abs/1e6).toFixed(2).replace('.',',') + 'M';
+  if (abs >= 1e3) return sign + 'R$ ' + Math.round(abs).toLocaleString('pt-BR');
+  return sign + 'R$ ' + Math.round(abs);
+};
+const fmtPct = (v, d=1) => v.toFixed(d).replace('.',',') + '%';
+
+function trackFill(el, color='var(--accent)') {
+  const pct = ((+el.value - +el.min) / (+el.max - +el.min) * 100).toFixed(1) + '%';
+  el.style.background = `linear-gradient(to right,${color} ${pct},var(--s3) ${pct})`;
+}
+
+document.querySelectorAll('input[type=range]').forEach(el => {
+  trackFill(el);
+  el.addEventListener('input', () => { trackFill(el); update(); });
+});
+
+let chart = null;
+
+function update() {
+  const invest  = +R('s-invest').value;
+  const retorno = +R('s-retorno').value / 100;
+  const taxa    = +R('s-taxa').value / 100;
+  const tempo   = +R('s-tempo').value;
+
+  // Labels
+  R('v-invest').textContent  = 'R$ ' + Math.round(invest).toLocaleString('pt-BR');
+  R('v-retorno').textContent = fmtPct(retorno * 100);
+  R('v-taxa').textContent    = fmtPct(taxa * 100);
+  R('v-tempo').textContent   = tempo + ' anos';
+
+  // Valores finais
+  const finalBruto = invest * Math.pow(1 + retorno, tempo);       // sem taxa
+  const finalLiq   = invest * Math.pow(1 + retorno - taxa, tempo); // com taxa
+
+  const ganhoBruto = finalBruto - invest;  // ganho total sem taxa
+  const ganhoLiq   = finalLiq   - invest;  // ganho que fica
+  const perdaTotal = ganhoBruto - ganhoLiq; // total perdido
+
+  // Decompor a perda:
+  // Taxa paga direta = invest * ((1+r)^n - (1+r-t)^n) ... não
+  // Maneira correta:
+  // taxa_paga = soma das taxas cobradas ano a ano sobre o patrimônio líquido
+  // drag = perdaTotal - taxa_paga
+  // Aproximação: taxa_paga_acum ≈ taxa * média_patrimonio * anos
+  // Mais preciso: simular anualmente
+  let taxaPaga = 0;
+  let cap = invest;
+  for (let a = 0; a < tempo; a++) {
+    cap = cap * (1 + retorno - taxa);
+    taxaPaga += cap / (1 + retorno - taxa) * taxa; // taxa sobre o cap do início do ano
+  }
+  // cap == finalLiq
+  // taxa paga = soma das taxas cobradas
+  // drag = restante da perda
+  const drag = Math.max(0, perdaTotal - taxaPaga);
+
+  // Scores
+  const scoreKeep = ganhoBruto > 0 ? (ganhoLiq / ganhoBruto) * 100 : 100;
+  const scoreLose = 100 - scoreKeep;
+  const pctTaxa   = ganhoBruto > 0 ? (taxaPaga / ganhoBruto) * 100 : 0;
+  const pctDrag   = ganhoBruto > 0 ? (drag / ganhoBruto) * 100 : 0;
+
+  // Score cards
+  R('score-keep').textContent = Math.round(scoreKeep) + '';
+  R('score-lose').textContent = Math.round(scoreLose) + '';
+  R('bar-keep').style.width = scoreKeep.toFixed(1) + '%';
+  R('bar-lose').style.width = scoreLose.toFixed(1) + '%';
+
+  // Result cards
+  R('r-bruto').textContent   = fmt(ganhoBruto);
+  R('r-taxa').textContent    = '− ' + fmt(taxaPaga);
+  R('r-drag').textContent    = '− ' + fmt(drag);
+  R('r-liquido').textContent = fmt(ganhoLiq);
+
+  // Breakdown bar
+  R('seg-keep').style.width = scoreKeep.toFixed(1) + '%';
+  R('seg-taxa').style.width = pctTaxa.toFixed(1) + '%';
+  R('seg-drag').style.width = pctDrag.toFixed(1) + '%';
+  R('bl-keep').textContent  = fmt(ganhoLiq) + ' (' + fmtPct(scoreKeep) + ')';
+
+  // Chart
+  const labels = Array.from({length: tempo + 1}, (_, i) => i);
+  const serBruto = labels.map(a => Math.round(invest * Math.pow(1 + retorno, a)));
+  const serLiq   = labels.map(a => Math.round(invest * Math.pow(1 + retorno - taxa, a)));
+
+  const opts = {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0f1219',
+        borderColor: 'rgba(255,255,255,0.06)', borderWidth: 1,
+        titleColor: '#6b7694', bodyColor: '#e6eaf4',
+        padding: 10,
+        callbacks: {
+          title: ctx => 'ano ' + ctx[0].label,
+          label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.025)' },
+        ticks: { color: '#303856', font: { family: 'IBM Plex Mono', size: 10 }, callback: v => v + 'a' }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.03)' },
+        ticks: {
+          color: '#303856', font: { family: 'IBM Plex Mono', size: 10 },
+          callback: v => v >= 1e6 ? (v/1e6).toFixed(1).replace('.',',') + 'M'
+                       : v >= 1e3 ? (v/1e3).toFixed(0) + 'k' : v
+        }
+      }
+    }
+  };
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Sem taxa', data: serBruto,
+        borderColor: 'rgba(91,156,246,0.7)',
+        backgroundColor: 'rgba(91,156,246,0.04)',
+        fill: true, tension: 0.4, pointRadius: 0, borderWidth: 1.5,
+        borderDash: [4, 3], pointHoverRadius: 4
+      },
+      {
+        label: 'Com taxa', data: serLiq,
+        borderColor: '#c8f135',
+        backgroundColor: 'rgba(200,241,53,0.05)',
+        fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2, pointHoverRadius: 4
+      }
+    ]
+  };
+
+  if (chart) {
+    chart.data = data;
+    chart.options = opts;
+    chart.update('none');
+  } else {
+    chart = new Chart(R('chart'), { type: 'line', data, options: opts });
+  }
+}
+
+update();
+</script>
+</body>
+</html>

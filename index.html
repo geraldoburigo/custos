@@ -164,7 +164,7 @@ input[type=range]::-webkit-slider-thumb:hover{
       <div class="field">
         <div class="field-top">
           <span class="field-label">Taxa de administração</span>
-          <span class="field-value" id="v-taxa">1,0%</span>
+          <span class="field-value" id="v-taxa">1,00%</span>
         </div>
         <input type="range" id="s-taxa" min="0" max="5" step="0.01" value="1">
         <div class="range-ticks"><span>0%</span><span>2,5%</span><span>5%</span></div>
@@ -288,7 +288,7 @@ function trackFill(el, color='var(--accent)') {
 
 document.querySelectorAll('input[type=range]').forEach(el => {
   trackFill(el);
-  el.addEventListener('input', () => { trackFill(el); (); });
+  el.addEventListener('input', () => { trackFill(el); update(); });
 });
 
 let chart = null;
@@ -302,33 +302,23 @@ function update() {
   // Labels
   R('v-invest').textContent  = 'R$ ' + Math.round(invest).toLocaleString('pt-BR');
   R('v-retorno').textContent = fmtPct(retorno * 100);
-  R('v-taxa').textContent    = fmtPct(taxa * 100,2);
+  R('v-taxa').textContent    = fmtPct(taxa * 100, 2);  // 2 casas decimais
   R('v-tempo').textContent   = tempo + ' anos';
 
   // Valores finais
-  const finalBruto = invest * Math.pow(1 + retorno, tempo);       // sem taxa
-  const finalLiq   = invest * Math.pow(1 + retorno - taxa, tempo); // com taxa
+  const finalBruto = invest * Math.pow(1 + retorno, tempo);
+  const finalLiq   = invest * Math.pow(1 + retorno - taxa, tempo);
 
-  const ganhoBruto = finalBruto - invest;  // ganho total sem taxa
-  const ganhoLiq   = finalLiq   - invest;  // ganho que fica
-  const perdaTotal = ganhoBruto - ganhoLiq; // total perdido
+  const ganhoBruto = finalBruto - invest;
+  const ganhoLiq   = finalLiq   - invest;
+  const perdaTotal = ganhoBruto - ganhoLiq;
 
-  // Decompor a perda:
-  // Taxa paga direta = invest * ((1+r)^n - (1+r-t)^n) ... não
-  // Maneira correta:
-  // taxa_paga = soma das taxas cobradas ano a ano sobre o patrimônio líquido
-  // drag = perdaTotal - taxa_paga
-  // Aproximação: taxa_paga_acum ≈ taxa * média_patrimonio * anos
-  // Mais preciso: simular anualmente
   let taxaPaga = 0;
   let cap = invest;
   for (let a = 0; a < tempo; a++) {
     cap = cap * (1 + retorno - taxa);
-    taxaPaga += cap / (1 + retorno - taxa) * taxa; // taxa sobre o cap do início do ano
+    taxaPaga += cap / (1 + retorno - taxa) * taxa;
   }
-  // cap == finalLiq
-  // taxa paga = soma das taxas cobradas
-  // drag = restante da perda
   const drag = Math.max(0, perdaTotal - taxaPaga);
 
   // Scores
